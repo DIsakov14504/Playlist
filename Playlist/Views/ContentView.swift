@@ -8,6 +8,7 @@ struct ContentView: View {
             .tabItem {
                 Label("Home", systemImage: "music.note.house")
             }
+                .environmentObject(services)
             
             ProfileView()
                 .tabItem {

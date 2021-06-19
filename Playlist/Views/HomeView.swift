@@ -1,9 +1,12 @@
 import SwiftUI
 
 struct HomeView: View {
+    @EnvironmentObject var services: MusicalServices
+    
     @State private var query: String = ""
     @State private var linkAM: String = ""
     @State private var linkYM: String = ""
+    @State private var linkVK: String = ""
     var body: some View {
         VStack {
             Text("Playlist")
@@ -37,6 +40,7 @@ struct HomeView: View {
                             if query != "" {
                                 linkAM = searchAM(name: query)
                                 linkYM = searchYM(name: query)
+                                linkVK = searchVK(name: query)
                             }
                             else {
                                 linkAM = ""
@@ -56,14 +60,24 @@ struct HomeView: View {
                 if linkAM != "" && query != ""{
                     HStack {
                         Spacer()
-                        Link(destination: URL(string: linkAM)!, label: {
-                            Image("Apple Music")
-                        })
-                        Spacer()
-                        Link(destination: URL(string: linkYM)!, label: {
-                            Image("Yandex Music")
-                        })
-                        Spacer()
+                        if services.services.contains("Apple Music"){
+                            Link(destination: URL(string: linkAM)!, label: {
+                                Image("Apple Music")
+                            })
+                            Spacer()
+                        }
+                        if services.services.contains("Yandex Music"){
+                            Link(destination: URL(string: linkYM)!, label: {
+                                Image("Yandex Music")
+                            })
+                            Spacer()
+                        }
+                        if services.services.contains("VK Music"){
+                            Link(destination: URL(string: linkVK)!, label: {
+                                Image("VK Music")
+                            })
+                            Spacer()
+                        }
                     }
                 }
                 
@@ -101,6 +115,32 @@ struct HomeView: View {
         
         return link
     }
+
+    func searchVK(name: String) -> String {
+        var link: String = ""
+        
+        let url = URL(string: "https://playlist-ad.herokuapp.com/vk/\(name.addingPercentEncoding(withAllowedCharacters: .urlHostAllowed)!)")
+        let semaphore = DispatchSemaphore(value: 0)
+        let task = URLSession.shared.dataTask(with: url!) {(data, response, error) in
+            guard let data = data else { return }
+            do {
+                if let json = try JSONSerialization.jsonObject(with: data, options : .allowFragments) as? Array<String>
+                {
+                    link = json[0]
+                    semaphore.signal()
+                }
+            } catch _ as NSError {
+                semaphore.signal()
+            }
+        }
+            
+        task.resume()
+        semaphore.wait()
+        
+        return link
+    }
+
+
     func searchYM(name: String) -> String {
         query = name
         var link: String = ""
